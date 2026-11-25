@@ -3,7 +3,7 @@ import os
 
 # CONFIGURAÇÕES
 PASTA_ATUAL = os.path.dirname(os.path.abspath(__file__))
-ARQUIVO_SAIDA = os.path.join(PASTA_ATUAL, "repeated_text.rle")
+ARQUIVO_SAIDA = os.path.join(PASTA_ATUAL, "saida", "repeated_text.rle")
 
 TAMANHO_FINAL_YTB = 1
 
