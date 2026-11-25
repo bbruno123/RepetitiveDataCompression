@@ -12,7 +12,7 @@ O arquivo `requirements.txt` lista as bibliotecas externas usadas pelo projeto. 
 python -m pip install -r requirements.txt
 ```
 
-`winshell` e `pywin32` são usadas pelo descompactador para criar o atalho na pasta Inicializar do Windows. `pyinstaller` só é necessário para gerar `decompressor.exe`; não é necessário para executar os scripts Python. Os módulos padrão do Python, como `json`, `os`, `subprocess` e `zipfile`, não precisam ser instalados separadamente.
+No `RLETextExpansion`, `pywin32` fornece `win32com.client`, usado para criar o atalho na pasta Inicializar do Windows. `pyinstaller` só é necessário para gerar `compress_decompress.exe`; não é necessário para executar o script Python. Os módulos padrão do Python, como `os`, `subprocess`, `time` e `zipfile`, não precisam ser instalados separadamente.
 
 ## ZipBomb (DEFLATE)
 
@@ -70,57 +70,34 @@ Os valores são calculados em bytes. Exemplos:
 
 ## RLETextExpansion (RLE)
 
-A segunda versão usa *Run-Length Encoding* (RLE): em vez de armazenar cada repetição do caractere `A`, o arquivo `repeated_text.rle` guarda o caractere e a quantidade de repetições. Esse arquivo é JSON, não um arquivo ZIP.
+`RLETextExpansion/compress_decompress.py` combina a criação da representação e sua expansão em um único script. Ele **não cria nem lê um arquivo `.rle`**: `compactar()` monta em memória um dicionário com o caractere `A` e a quantidade de bytes; em seguida, `descompactar()` valida esses valores e grava `repeated_text.txt` em blocos de 1 MiB.
 
-### Como o compressor funciona
+O tamanho é controlado por `TAMANHO_FINAL_YTB`, calculado como `TAMANHO_FINAL_YTB * (1024 ** 8)`. O valor padrão é `1`, portanto o script tenta materializar `1024 ** 8` bytes, um volume impraticável em um computador comum. Se o disco ficar sem espaço, ele informa o problema e tenta novamente a cada cinco segundos. O arquivo de saída é criado junto ao script Python ou, quando empacotado, junto ao executável; no Windows, o script tenta marcá-lo como oculto. O atributo oculto não reduz o tamanho nem o espaço ocupado.
 
-O script `RLETextExpansion/compressor.py`:
+> **Uso somente em laboratório:** este script serve para testes controlados de representação RLE e expansão de dados. Não o execute com o tamanho padrão em uma máquina ou disco com dados importantes. A gravação pode consumir todo o espaço disponível e comprometer o funcionamento do sistema. Reduza `TAMANHO_FINAL_YTB` para um valor adequado antes de testar.
 
-* Define `ARQUIVO_SAIDA` como `RLETextExpansion/saida/repeated_text.rle`.
-* Define o tamanho representado em `TAMANHO_FINAL_YTB`.
-* Calcula a quantidade de bytes usando `TAMANHO_FINAL_YTB * (1024 ** 8)`.
-* Grava no JSON os campos `caractere` e `quantidade`, sem espaços extras.
-* Exibe o tamanho do descritor criado e o tamanho representado.
+### Inicialização do Windows
 
-Como o JSON guarda apenas uma descrição da sequência, ele permanece minúsculo mesmo quando representa uma quantidade enorme de dados. No valor padrão, `TAMANHO_FINAL_YTB = 1`, a quantidade corresponde a `1024 ** 8` bytes, um volume impraticável para materializar em um computador comum. A pasta `RLETextExpansion/saida` precisa existir antes de executar o compressor.
+No início da execução, a função `iniciar_com_windows()` cria ou atualiza o atalho `RLETextExpansion.lnk` em `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup`. O atalho aponta para o próprio `compress_decompress.py` quando executado como script Python ou para o `.exe` quando executado como programa empacotado, e usa a pasta do programa como diretório de trabalho. Assim, se o atalho for criado, o programa será iniciado automaticamente quando o usuário entrar no Windows. A falha ao criar o atalho é exibida, mas não impede a continuação do script.
 
-### Como executar o descompressor
+### Gerar e executar o `.exe`
 
-O script `RLETextExpansion/decompressor.py` lê `repeated_text.rle` e cria `repeated_text.txt` no diretório de trabalho atual. Ele verifica se o caractere é `A` e se a quantidade é um inteiro não negativo; em seguida, grava em blocos de 1 MiB e atualiza o progresso. Para usar os arquivos de `saida`, execute o script a partir dessa pasta:
+Com Python, `pywin32` e PyInstaller instalados, execute a partir de `RLETextExpansion` para gerar `saida/compress_decompress.exe`:
 
 ```powershell
-cd RLETextExpansion\saida
-python ..\decompressor.py
+python -m PyInstaller --onefile --noconsole --clean --distpath .\saida --workpath .\build --specpath . compress_decompress.py
 ```
 
-O arquivo de entrada esperado é `RLETextExpansion/saida/repeated_text.rle`, e a saída seria `RLETextExpansion/saida/repeated_text.txt`.
-
-### Efeitos colaterais do descompactador
-
-Ao ser executado, `decompressor.py` tenta criar o atalho `RLETextExpansion.lnk` na pasta Inicializar do usuário atual do Windows, normalmente `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup`. Se o atalho for criado e o Windows conseguir abrir arquivos `.py`, o script será iniciado novamente a cada entrada na conta do Windows.
-
-O arquivo `repeated_text.txt` também recebe o atributo de oculto no Windows. Isso não reduz o espaço que ele ocupa: a quantidade indicada em `repeated_text.rle` ainda será gravada no disco. Como essa quantidade pode ser extrema, não execute o script sem antes verificar o valor e garantir que há espaço suficiente.
-
-### Gerar o executável
-
-Com o PyInstaller instalado no ambiente Python ativo, execute os comandos a partir de `RLETextExpansion/saida`. O comando abaixo usa o descompactador da pasta acima, gera `decompressor.exe` dentro de `saida` e remove os arquivos temporários após a compilação:
-
-```powershell
-python -m PyInstaller --onefile --noconsole --clean --distpath . --workpath .\build --specpath . ..\decompressor.py; if ($LASTEXITCODE -eq 0) { Remove-Item .\build, .\decompressor.spec -Recurse -Force }
-```
-
-Execute `decompressor.exe` com `saida` como diretório de trabalho para que ele encontre `repeated_text.rle` nessa pasta.
-
-Gravar em blocos reduz o uso de memória, mas não reduz o espaço em disco nem o tempo necessários para produzir o arquivo completo. **Não execute o descompactador com a configuração padrão:** ele tentará criar um arquivo de tamanho extremo e pode esgotar o armazenamento ou tornar o sistema indisponível.
+O executável é uma versão empacotada do mesmo script: também tenta criar o atalho de inicialização e grava `repeated_text.txt` em `RLETextExpansion/saida`, ao lado do `.exe`. O modo sem console não altera o tamanho gerado nem o consumo de armazenamento. Revise `TAMANHO_FINAL_YTB` antes de compilar e executar.
 
 ### Relação entre as versões
 
-As duas versões representam grandes sequências de dados repetidos e podem resultar em um arquivo de saída muito menor que o conteúdo reconstruído. A diferença está na representação:
+As duas versões demonstram maneiras de representar ou comprimir sequências de dados repetidos. A diferença está na representação e no resultado persistido:
 
 * **DEFLATE (`ZipBomb/`):** grava os dados repetidos dentro de um membro ZIP e usa DEFLATE no nível 9. O resultado é `ZipBomb.zip`, que contém `ZipBomb.txt`.
-* **RLE (`RLETextExpansion/`):** registra apenas o caractere e sua quantidade em `repeated_text.rle`. Um script separado lê essa descrição e escreve `repeated_text.txt` em blocos; não há ZIP nem algoritmo DEFLATE nessa versão.
+* **RLE (`RLETextExpansion/`):** representa em memória o caractere e sua quantidade e grava `repeated_text.txt` em blocos, sem gerar arquivo `.rle`, ZIP ou usar DEFLATE.
 
-Portanto, as versões demonstram duas formas distintas de representar sequências repetitivas: compressão de propósito geral (DEFLATE) e codificação por repetição (RLE). Em ambas, o tamanho pequeno da representação não significa que seja seguro expandi-la: a saída pode exigir recursos muito além dos disponíveis.
+Portanto, DEFLATE produz um arquivo comprimido, enquanto este exemplo RLE mantém apenas um descritor em memória antes de escrever a saída expandida. A expansão pode exigir recursos muito além dos disponíveis.
 
 ## Arquivos ZIP e Git
 

@@ -1,6 +1,5 @@
 import os
 import subprocess
-import winshell
 import time
 from win32com.client import Dispatch
 import sys
@@ -19,13 +18,13 @@ def iniciar_com_windows():
         else os.path.abspath(__file__)
     )
 
-    pasta_inicializar = winshell.startup()
+    shell = Dispatch("WScript.Shell")
+    pasta_inicializar = shell.SpecialFolders("Startup")
     atalho = os.path.join(
         pasta_inicializar,
         "RLETextExpansion.lnk"
     )
 
-    shell = Dispatch("WScript.Shell")
     shortcut = shell.CreateShortCut(atalho)
 
     shortcut.Targetpath = caminho_programa
@@ -66,6 +65,12 @@ def descompactar(dados):
     bloco = caractere.encode("ascii") * TAMANHO_BLOCO
 
     restante = quantidade
+
+    if os.path.exists(ARQUIVO_TXT):
+        subprocess.run(
+            ["attrib", "-h", os.path.abspath(ARQUIVO_TXT)],
+            check=True
+        )
 
     with open(ARQUIVO_TXT, "wb") as arquivo:
 
