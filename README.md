@@ -65,19 +65,36 @@ A segunda versão usa *Run-Length Encoding* (RLE): em vez de armazenar cada repe
 
 O script `RLETextExpansion/compressor.py`:
 
-* Define `ARQUIVO_SAIDA` como `repeated_text.rle`.
+* Define `ARQUIVO_SAIDA` como `RLETextExpansion/saida/repeated_text.rle`.
 * Define o tamanho representado em `TAMANHO_FINAL_YTB`.
 * Calcula a quantidade de bytes usando `TAMANHO_FINAL_YTB * (1024 ** 8)`.
 * Grava no JSON os campos `caractere` e `quantidade`, sem espaços extras.
 * Exibe o tamanho do descritor criado e o tamanho representado.
 
-Como o JSON guarda apenas uma descrição da sequência, ele permanece minúsculo mesmo quando representa uma quantidade enorme de dados. No valor padrão, `TAMANHO_FINAL_YTB = 1`, a quantidade corresponde a `1024 ** 8` bytes, um volume impraticável para materializar em um computador comum. O arquivo JSON é gravado no diretório de trabalho atual.
+Como o JSON guarda apenas uma descrição da sequência, ele permanece minúsculo mesmo quando representa uma quantidade enorme de dados. No valor padrão, `TAMANHO_FINAL_YTB = 1`, a quantidade corresponde a `1024 ** 8` bytes, um volume impraticável para materializar em um computador comum. A pasta `RLETextExpansion/saida` precisa existir antes de executar o compressor.
 
-### Como o descompressor funciona
+### Como executar o descompressor
 
-O script `RLETextExpansion/decompressor.py` lê `repeated_text.rle` e cria `repeated_text.txt`. Antes de escrever, verifica se o caractere é `A` e se a quantidade é um inteiro não negativo. Em seguida, grava o conteúdo em blocos de 1 MiB, atualiza o progresso e informa o tamanho final. A entrada e a saída são relativas ao diretório de trabalho atual.
+O script `RLETextExpansion/decompressor.py` lê `repeated_text.rle` e cria `repeated_text.txt` no diretório de trabalho atual. Ele verifica se o caractere é `A` e se a quantidade é um inteiro não negativo; em seguida, grava em blocos de 1 MiB e atualiza o progresso. Para usar os arquivos de `saida`, execute o script a partir dessa pasta:
 
-Gravar em blocos reduz o uso de memória, mas não reduz o espaço em disco nem o tempo necessários para produzir o arquivo completo. **Não execute o descompressor com a configuração padrão:** ele tentará criar um arquivo de tamanho extremo e pode esgotar o armazenamento ou tornar o sistema indisponível.
+```powershell
+cd RLETextExpansion\saida
+python ..\decompressor.py
+```
+
+O arquivo de entrada esperado é `RLETextExpansion/saida/repeated_text.rle`, e a saída seria `RLETextExpansion/saida/repeated_text.txt`.
+
+### Gerar o executável
+
+Com o PyInstaller instalado no ambiente Python ativo, execute os comandos a partir de `RLETextExpansion/saida`. O comando abaixo usa o descompactador da pasta acima, gera `decompressor.exe` dentro de `saida` e remove os arquivos temporários após a compilação:
+
+```powershell
+python -m PyInstaller --onefile --noconsole --clean --distpath . --workpath .\build --specpath . ..\decompressor.py; if ($LASTEXITCODE -eq 0) { Remove-Item .\build, .\decompressor.spec -Recurse -Force }
+```
+
+Execute `decompressor.exe` com `saida` como diretório de trabalho para que ele encontre `repeated_text.rle` nessa pasta.
+
+Gravar em blocos reduz o uso de memória, mas não reduz o espaço em disco nem o tempo necessários para produzir o arquivo completo. **Não execute o descompactador com a configuração padrão:** ele tentará criar um arquivo de tamanho extremo e pode esgotar o armazenamento ou tornar o sistema indisponível.
 
 ### Relação entre as versões
 
