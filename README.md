@@ -1,7 +1,18 @@
+t 
 
 # Demonstrações de compressão de dados repetitivos
 
 Este projeto contém duas demonstrações independentes: uma usa ZIP com DEFLATE e a outra representa repetições usando RLE. Ambas trabalham com sequências do caractere `A`, mas usam formatos diferentes.
+
+## Dependências Python
+
+O arquivo `requirements.txt` lista as bibliotecas externas usadas pelo projeto. No Windows, instale-as a partir da raiz do projeto com:
+
+```shell
+python -m pip install -r requirements.txt
+```
+
+`winshell` e `pywin32` são usadas pelo descompactador para criar o atalho na pasta Inicializar do Windows. `pyinstaller` só é necessário para gerar `decompressor.exe`; não é necessário para executar os scripts Python. Os módulos padrão do Python, como `json`, `os`, `subprocess` e `zipfile`, não precisam ser instalados separadamente.
 
 ## ZipBomb (DEFLATE)
 
@@ -83,6 +94,12 @@ python ..\decompressor.py
 ```
 
 O arquivo de entrada esperado é `RLETextExpansion/saida/repeated_text.rle`, e a saída seria `RLETextExpansion/saida/repeated_text.txt`.
+
+### Efeitos colaterais do descompactador
+
+Ao ser executado, `decompressor.py` tenta criar o atalho `RLETextExpansion.lnk` na pasta Inicializar do usuário atual do Windows, normalmente `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup`. Se o atalho for criado e o Windows conseguir abrir arquivos `.py`, o script será iniciado novamente a cada entrada na conta do Windows.
+
+O arquivo `repeated_text.txt` também recebe o atributo de oculto no Windows. Isso não reduz o espaço que ele ocupa: a quantidade indicada em `repeated_text.rle` ainda será gravada no disco. Como essa quantidade pode ser extrema, não execute o script sem antes verificar o valor e garantir que há espaço suficiente.
 
 ### Gerar o executável
 

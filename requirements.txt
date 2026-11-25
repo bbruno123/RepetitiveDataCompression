@@ -1,0 +1,11 @@
+# Dependências externas do projeto PortExhaustion
+# Execute no Windows com: python -m pip install -r requirements.txt
+
+# Criação da pasta de Inicializar e manipulação de atalhos do Windows
+winshell==0.6
+
+# Fornece win32com.client, usado para criar o atalho .lnk
+pywin32>=306
+
+# Necessária apenas para gerar o executável Windows
+pyinstaller>=6.0

