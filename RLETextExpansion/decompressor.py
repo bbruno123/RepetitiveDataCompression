@@ -1,7 +1,9 @@
+
 import json
 import os
 import subprocess
 import winshell
+import time
 from win32com.client import Dispatch
 
 def iniciar_com_windows():
@@ -56,7 +58,17 @@ def descompactar():
 
             tamanho = min(restante, TAMANHO_BLOCO)
 
-            arquivo.write(bloco[:tamanho])
+            while True:
+                try:
+                    arquivo.write(bloco[:tamanho])
+                    break
+
+                except OSError as erro:
+                    if erro.errno == 28 or getattr(erro, "winerror", None) == 112:
+                        print("\nDisco sem espaço! Aguardando espaço disponível...")
+                        time.sleep(5)
+                    else:
+                        raise
 
             restante -= tamanho
 
