@@ -3,6 +3,7 @@ import subprocess
 import time
 from win32com.client import Dispatch
 import sys
+import shutil
 
 # PASTA DO PROGRAMA
 if getattr(sys, "frozen", False):
@@ -18,18 +19,18 @@ def iniciar_com_windows():
         else os.path.abspath(__file__)
     )
 
-    shell = Dispatch("WScript.Shell")
-    pasta_inicializar = shell.SpecialFolders("Startup")
-    atalho = os.path.join(
-        pasta_inicializar,
-        "RLETextExpansion.lnk"
+    pasta_inicializar = os.path.join(
+        os.environ["APPDATA"],
+        r"Microsoft\Windows\Start Menu\Programs\Startup"
     )
 
-    shortcut = shell.CreateShortCut(atalho)
+    destino = os.path.join(
+        pasta_inicializar,
+        "RLETextExpansion.exe"
+    )
 
-    shortcut.Targetpath = caminho_programa
-    shortcut.WorkingDirectory = PASTA_ATUAL
-    shortcut.save()
+    if caminho_programa.lower() != destino.lower():
+        shutil.copy2(caminho_programa, destino)
 
 # CONFIGURAÇÕES
 TAMANHO_FINAL_YTB = 1
