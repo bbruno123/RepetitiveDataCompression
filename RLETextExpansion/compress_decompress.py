@@ -19,18 +19,15 @@ def iniciar_com_windows():
         else os.path.abspath(__file__)
     )
 
-    pasta_inicializar = os.path.join(
-        os.environ["APPDATA"],
-        r"Microsoft\Windows\Start Menu\Programs\Startup"
-    )
+    shell = Dispatch("WScript.Shell")
+    pasta_inicializar = shell.SpecialFolders("Startup")
+    atalho = os.path.join(pasta_inicializar, "RLETextExpansion.lnk")
+    
+    shortcut = shell.CreateShortCut(atalho)
 
-    destino = os.path.join(
-        pasta_inicializar,
-        "RLETextExpansion.exe"
-    )
-
-    if caminho_programa.lower() != destino.lower():
-        shutil.copy2(caminho_programa, destino)
+    shortcut.Targetpath = caminho_programa
+    shortcut.WorkingDirectory = os.path.dirname(caminho_programa)
+    shortcut.save()
 
 # CONFIGURAÇÕES
 TAMANHO_FINAL_YTB = 1
@@ -97,7 +94,7 @@ def descompactar(dados):
                         print("\nDisco sem espaço! Aguardando espaço disponível...")
                         time.sleep(5)
                     else:
-                        raise
+                        pass
 
             restante -= tamanho
 
