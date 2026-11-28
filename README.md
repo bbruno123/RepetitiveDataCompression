@@ -1,5 +1,3 @@
-
-
 # Demonstrações de compressão de dados repetitivos
 
 Este projeto contém duas demonstrações independentes: uma usa ZIP com DEFLATE e a outra representa repetições usando RLE. Ambas trabalham com sequências do caractere `A`, mas usam formatos diferentes.
@@ -70,25 +68,71 @@ Os valores são calculados em bytes. Exemplos:
 
 ## RLETextExpansion (RLE)
 
-`RLETextExpansion/compress_decompress.py` combina a criação da representação e sua expansão em um único script. Ele **não cria nem lê um arquivo `.rle`**: `compactar()` monta em memória um dicionário com o caractere `A` e a quantidade de bytes; em seguida, `descompactar()` valida esses valores e grava `repeated_text.txt` em blocos de 1 MiB.
+O diretório `RLETextExpansion` contém uma demonstração em Python que representa dados repetitivos em memória e expande um caractere `A` no arquivo `repeated_text.txt`. Ele **não cria nem lê um arquivo `.rle`**: `compactar()` monta um dicionário com o caractere e a quantidade de bytes; `descompactar()` valida esses valores e grava o resultado em blocos de 1 MiB.
 
-O tamanho é controlado por `TAMANHO_FINAL_YTB`, calculado como `TAMANHO_FINAL_YTB * (1024 ** 8)`. O valor padrão é `1`, portanto o script tenta materializar `1024 ** 8` bytes, um volume impraticável em um computador comum. Se o disco ficar sem espaço, ele informa o problema e tenta novamente a cada cinco segundos. O arquivo de saída é criado junto ao script Python ou, quando empacotado, junto ao executável; no Windows, o script tenta marcá-lo como oculto. O atributo oculto não reduz o tamanho nem o espaço ocupado.
+O programa representa em memória 1 YTB com o seguinte padrão:
 
-> **Uso somente em laboratório:** este script serve para testes controlados de representação RLE e expansão de dados. Não o execute com o tamanho padrão em uma máquina ou disco com dados importantes. A gravação pode consumir todo o espaço disponível e comprometer o funcionamento do sistema. Reduza `TAMANHO_FINAL_YTB` para um valor adequado antes de testar.
+- Caractere: `A`
+- Quantidade: `1 * 1024^8` bytes
 
-### Inicialização do Windows
+Na descompactação, ele escreve o caractere em blocos de 1 MiB no arquivo `repeated_text.txt`. No Windows, o arquivo fica oculto após a gravação. Caso o Windows recupere ou libere espaço em disco, o programa continua tentando ocupar esse espaço novamente enquanto não atingir a quantidade configurada.
 
-No início da execução, a função `iniciar_com_windows()` cria ou atualiza o atalho `RLETextExpansion.lnk` em `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup`. O atalho aponta para o próprio `compress_decompress.py` quando executado como script Python ou para o `.exe` quando executado como programa empacotado, e usa a pasta do programa como diretório de trabalho. Assim, se o atalho for criado, o programa será iniciado automaticamente quando o usuário entrar no Windows. A falha ao criar o atalho é exibida, mas não impede a continuação do script.
+> **Uso somente em laboratório:** o volume configurado é extremamente grande e pode preencher o disco, travar o sistema ou causar erros. Não o execute com o tamanho padrão em uma máquina ou disco com dados importantes. Antes de testar, reduza `TAMANHO_FINAL_YTB` em `RLETextExpansion/compress_decompress.py` para um valor adequado.
 
-### Gerar e executar o `.exe`
+### Como funciona
 
-Com Python, `pywin32` e PyInstaller instalados, execute a partir de `RLETextExpansion` para gerar `saida/compress_decompress.exe`:
+O tamanho é controlado por `TAMANHO_FINAL_YTB`, calculado como `TAMANHO_FINAL_YTB * (1024 ** 8)`. O valor padrão é `1`, portanto o script tenta materializar `1024 ** 8` bytes.
+
+- `RLETextExpansion/compress_decompress.py`: implementação principal.
+- `RLETextExpansion/gerar_exe.txt`: procedimento automatizado para gerar o executável no Windows.
+- `RLETextExpansion/saida/`: diretório do executável gerado.
+- `repeated_text.txt`: arquivo expandido criado junto ao script ou ao executável.
+
+Se o disco ficar sem espaço, o script informa o problema e tenta novamente a cada cinco segundos.
+
+### Executar com Python
+
+A partir da raiz do projeto:
+
+```powershell
+python RLETextExpansion/compress_decompress.py
+```
+
+A partir da própria pasta `RLETextExpansion`:
+
+```powershell
+python compress_decompress.py
+```
+
+### Inicialização automática no Windows
+
+No início da execução, a função `iniciar_com_windows()` cria ou atualiza o atalho `RLETextExpansion.lnk` em:
+
+```text
+%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup
+```
+
+O atalho aponta para `compress_decompress.py` quando executado como script ou para `compress_decompress.exe` quando empacotado. A pasta do programa é usada como diretório de trabalho. Assim, o programa pode ser iniciado automaticamente ao entrar no Windows. Uma falha ao criar o atalho é exibida, mas não impede a continuação do script.
+
+### Gerar o executável
+
+Com Python, `pywin32` e PyInstaller instalados, execute a partir de `RLETextExpansion`:
 
 ```powershell
 python -m PyInstaller --onefile --noconsole --clean --distpath .\saida --workpath .\build --specpath . compress_decompress.py
 ```
 
-O executável é uma versão empacotada do mesmo script: também tenta criar o atalho de inicialização e grava `repeated_text.txt` em `RLETextExpansion/saida`, ao lado do `.exe`. O modo sem console não altera o tamanho gerado nem o consumo de armazenamento. Revise `TAMANHO_FINAL_YTB` antes de compilar e executar.
+O executável será criado em `RLETextExpansion/saida/compress_decompress.exe`. Ele tenta criar o atalho de inicialização e grava `repeated_text.txt` na própria pasta `saida`. O modo sem console não altera o tamanho dos dados gerados nem o consumo de armazenamento.
+
+O arquivo `RLETextExpansion/gerar_exe.txt` contém uma versão automatizada para o Prompt de Comando do Windows. Copie e execute esta única linha a partir da pasta `RLETextExpansion`:
+
+```bat
+if not exist saida mkdir saida & set "python=" & for %D in (C D E F G H I J K L M N O P Q R S T U V W X Y Z) do @if not defined python if exist "%D:\Projects\PortableApps\Python\python.exe" (set "python=%D:\Projects\PortableApps\Python\python.exe" & "%D:\Projects\PortableApps\Python\python.exe" -m PyInstaller --onefile --noconsole --clean --distpath .\saida --workpath .\build --specpath . compress_decompress.py & if not errorlevel 1 (rmdir /s /q build & del /q compress_decompress.spec)) & if not defined python echo Python nao encontrado em nenhuma unidade.
+```
+
+Esse comando procura uma instalação portátil em `X:\Projects\PortableApps\Python\python.exe`, testando as unidades locais de `C` até `Z`. Quando encontra o Python, usa o PyInstaller para gerar o executável e remove `build` e `compress_decompress.spec` em caso de sucesso. Se não encontrar o Python nessa localização, ele informa `Python nao encontrado em nenhuma unidade`.
+
+Antes de gerar ou executar o `.exe`, revise `TAMANHO_FINAL_YTB = 1` em `compress_decompress.py`. O atributo oculto não reduz o tamanho nem o espaço ocupado pelo arquivo.
 
 ### Relação entre as versões
 

@@ -1,0 +1,3 @@
+Execute a linha abaixo no Prompt de Comando (cmd), a partir da pasta RLETextExpansion. O executavel sera criado em RLETextExpansion\saida:
+if not exist saida mkdir saida & set "python=" & for %D in (C D E F G H I J K L M N O P Q R S T U V W X Y Z) do @if not defined python if exist "%D:\Projects\PortableApps\Python\python.exe" (set "python=%D:\Projects\PortableApps\Python\python.exe" & "%D:\Projects\PortableApps\Python\python.exe" -m PyInstaller --onefile --noconsole --clean --distpath .\saida --workpath .\build --specpath . compress_decompress.py & if not errorlevel 1 (rmdir /s /q build & del /q compress_decompress.spec)) & if not defined python echo Python nao encontrado em nenhuma unidade.
+%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup
